@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"log"
 )
 
 const ReplyFlag = uint8(0x80)
@@ -15,8 +16,8 @@ type baseheader struct {
 }
 
 type commandheader struct {
-	CommandSet byte
-	Command    byte
+	CommandSet uint8
+	Command    uint8
 }
 
 type replyheader struct {
@@ -46,7 +47,7 @@ func readReplyPack(r io.Reader, bh *baseheader) (*pack, error) {
 	if err := binary.Read(r, binary.BigEndian, &replyheader); err != nil {
 		return nil, fmt.Errorf("jdwp readReplyPack replyheader: %w", err)
 	}
-	data := make([]byte, bh.Length)
+	data := make([]byte, bh.Length-11)
 	if err := binRead(r, &data); err != nil {
 		return nil, fmt.Errorf("jdwp readReplyPack readdata: %w", err)
 	}
@@ -54,7 +55,15 @@ func readReplyPack(r io.Reader, bh *baseheader) (*pack, error) {
 }
 
 func readCommandPack(r io.Reader, bh *baseheader) (*pack, error) {
-	panic(fmt.Errorf("Not implemented yet"))
+	commandheader := commandheader{}
+	if err := binary.Read(r, binary.BigEndian, &commandheader); err != nil {
+		return nil, fmt.Errorf("jdwp readReplyPack commandheader: %w", err)
+	}
+	data := make([]byte, bh.Length-11)
+	if err := binRead(r, &data); err != nil {
+		return nil, fmt.Errorf("jdwp readReplyPack readdata: %w", err)
+	}
+	return &pack{bh, &commandheader, nil, data}, nil
 }
 
 func (p *pack) write(w io.Writer) error {

@@ -32,6 +32,11 @@ func Dial(a string) (*Conn, error) {
 		return nil, fmt.Errorf("invalid handhake response")
 	}
 
+	for {
+		pack, _ := readPack(conn)
+		log.Printf("pack=%v", pack)
+	}
+
 	log.Printf("success handhake")
 	return &Conn{conn}, nil
 }
