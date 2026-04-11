@@ -42,3 +42,22 @@ func handhake(rw io.ReadWriter) error {
 	}
 	return nil
 }
+
+func (c *Conn) Write(p *CommandPack) error {
+	if err := writePack(c.conn, p); err != nil {
+		return fmt.Errorf("jdwp Conn.Write: %w", err)
+	}
+	return nil
+}
+
+type ResumeCommandDataType string
+
+const ResumeCommandData = ResumeCommandDataType("ResumeCommandDataType")
+
+func NewResumeCommand(id uint32) *CommandPack {
+	return &CommandPack{Pack{id}, 1, 9, ResumeCommandData}
+}
+
+func (r ResumeCommandDataType) JDWPData() []byte {
+	return nil
+}

@@ -2,6 +2,7 @@ package jdwp
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 )
 
@@ -32,6 +33,10 @@ type Event struct {
 	SuspendPolicy SuspendPolicy
 	Events        uint32
 	EventData     []EventData
+}
+
+func (*Event) JDWPData() []byte {
+	panic(errors.New("jdwp event bytes not implemented yet"))
 }
 
 type VMStartEventData struct {

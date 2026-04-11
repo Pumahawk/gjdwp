@@ -31,7 +31,9 @@ type CommandPack struct {
 
 type Data any
 type ReplyData any
-type CommandData any
+type CommandData interface {
+	JDWPData() []byte
+}
 
 func nextPack(r io.Reader) (PackType, error) {
 	var length uint32
@@ -74,7 +76,7 @@ func nextPack(r io.Reader) (PackType, error) {
 	}
 }
 
-func solvePackData(r io.Reader, length uint32, cs CommandSet, c Command) (Data, error) {
+func solvePackData(r io.Reader, length uint32, cs CommandSet, c Command) (CommandData, error) {
 	bf := make([]byte, length-11)
 	if err := binRead(r, &bf); err != nil {
 		return nil, fmt.Errorf("jdwp pack solvePackData read bf: %w", err)
@@ -90,4 +92,28 @@ func solvePackData(r io.Reader, length uint32, cs CommandSet, c Command) (Data, 
 	default:
 		return nil, fmt.Errorf("jdwp solvePackData cs=%d", cs)
 	}
+}
+
+func writePack(w io.Writer, c *CommandPack) error {
+	data := c.Data.JDWPData()
+	var length uint32 = uint32(len(data)) + 11
+	if err := binWrite(w, length); err != nil {
+		return fmt.Errorf("jdwp write pack length: %w", err)
+	}
+	if err := binWrite(w, c.Id); err != nil {
+		return fmt.Errorf("jdwp write pack c.Id: %w", err)
+	}
+	if err := binWrite(w, ReplyFlag); err != nil {
+		return fmt.Errorf("jdwp write pack ReplyFlag: %w", err)
+	}
+	if err := binWrite(w, c.CommandSet); err != nil {
+		return fmt.Errorf("jdwp write pack c.CommandSet: %w", err)
+	}
+	if err := binWrite(w, c.Command); err != nil {
+		return fmt.Errorf("jdwp write pack c.Command: %w", err)
+	}
+	if err := binWrite(w, data); err != nil {
+		return fmt.Errorf("jdwp write pack data: %w", err)
+	}
+	return nil
 }

@@ -9,6 +9,9 @@ import (
 
 func main() {
 	c, err := jdwp.Dial("localhost:5005")
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
 	pack, _ := c.Next()
 	switch pack := pack.(type) {
 	case *jdwp.ReplyPack:
@@ -31,7 +34,14 @@ func main() {
 	default:
 		panic(fmt.Errorf("main unknown pack type %T", pack))
 	}
+
+	log.Printf("Write ResumeCommandData")
+	err = c.Write(jdwp.NewResumeCommand(102))
 	if err != nil {
-		log.Fatalf("%s", err)
+		log.Printf("Error on write pack: %s", err)
+	} else {
+		log.Printf("Success write pack")
 	}
+	ch := make(chan int)
+	<-ch
 }
