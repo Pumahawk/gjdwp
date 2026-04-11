@@ -7,28 +7,31 @@ import (
 
 const ReplyFlag = uint8(0x80)
 
-type typesizemap map[uint8]uint8
-
 type PackType any
 
 type Pack struct {
-	Id   uint32
-	Data Data
+	Id uint32
 }
 
 type ReplyPack struct {
 	Pack
 	Error uint16
+	Data  ReplyData
 }
+
+type CommandSet uint8
+type Command uint8
 
 type CommandPack struct {
 	Pack
-	CommandSet uint8
-	Command    uint8
-	Data       Data
+	CommandSet CommandSet
+	Command    Command
+	Data       CommandData
 }
 
-type Data []byte
+type Data any
+type ReplyData any
+type CommandData any
 
 func nextPack(r io.Reader) (PackType, error) {
 	var length uint32
@@ -53,20 +56,38 @@ func nextPack(r io.Reader) (PackType, error) {
 		if err := binRead(r, &data); err != nil {
 			return nil, fmt.Errorf("jdwp pack read reply data: %w", err)
 		}
-		return &ReplyPack{Pack: Pack{id, data}, Error: errorCode}, nil
+		return &ReplyPack{Pack{id}, errorCode, data}, nil
 	default:
-		var commandSet uint8
+		var commandSet CommandSet
 		if err := binRead(r, &commandSet); err != nil {
 			return nil, fmt.Errorf("jdwp pack read command commandSet: %w", err)
 		}
-		var command uint8
+		var command Command
 		if err := binRead(r, &command); err != nil {
 			return nil, fmt.Errorf("jdwp pack read command: %w", err)
 		}
-		data := make([]byte, length-11)
-		if err := binRead(r, &data); err != nil {
+		data, err := solvePackData(r, length, commandSet, command)
+		if err != nil {
 			return nil, fmt.Errorf("jdwp pack read command data: %w", err)
 		}
-		return &CommandPack{Pack{id, data}, commandSet, command, data}, nil
+		return &CommandPack{Pack{id}, CommandSet(commandSet), Command(command), data}, nil
+	}
+}
+
+func solvePackData(r io.Reader, length uint32, cs CommandSet, c Command) (Data, error) {
+	bf := make([]byte, length-11)
+	if err := binRead(r, &bf); err != nil {
+		return nil, fmt.Errorf("jdwp pack solvePackData read bf: %w", err)
+	}
+	switch cs {
+	case 64:
+		switch c {
+		case 100:
+			return readEventComposite(bf)
+		default:
+		}
+		return nil, fmt.Errorf("jdwp solvePackData cs=%d c=%d", cs, c)
+	default:
+		return nil, fmt.Errorf("jdwp solvePackData cs=%d", cs)
 	}
 }
