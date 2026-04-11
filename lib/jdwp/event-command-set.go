@@ -7,6 +7,19 @@ import (
 
 type SuspendPolicy uint8
 
+func (s SuspendPolicy) String() string {
+	switch s {
+	case NoneSP:
+		return "NoneSP"
+	case EventThreadSP:
+		return "EventThreadSP"
+	case AllSP:
+		return "AllSP"
+	default:
+		return fmt.Sprint(uint8(s))
+	}
+}
+
 const (
 	NoneSP SuspendPolicy = iota
 	EventThreadSP

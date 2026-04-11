@@ -20,7 +20,7 @@ func main() {
 				i := i + 1
 				switch eventData.(type) {
 				case *jdwp.VMStartEventData:
-					log.Printf("command pack: event: (%d/%d) vmstartevent \n", i, event.Events)
+					log.Printf("command pack: event: (%d/%d) vmstartevent SuspendPolicy=%q\n", i, event.Events, event.SuspendPolicy)
 				default:
 					log.Printf("command pack: event: (%d/%d) unknown data type %T\n", i, event.Events, event.EventData)
 				}
