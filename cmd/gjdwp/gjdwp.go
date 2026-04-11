@@ -7,7 +7,9 @@ import (
 )
 
 func main() {
-	_, err := jdwp.Dial("localhost:5005")
+	c, err := jdwp.Dial("localhost:5005")
+	pack, _ := c.Next()
+	log.Printf("pack=%v", pack)
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
