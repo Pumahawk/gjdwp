@@ -6,6 +6,7 @@ import (
 )
 
 const ReplyFlag = uint8(0x80)
+const CommandFlag = uint8(0x00)
 
 type PackType any
 
@@ -103,7 +104,7 @@ func writePack(w io.Writer, c *CommandPack) error {
 	if err := binWrite(w, c.Id); err != nil {
 		return fmt.Errorf("jdwp write pack c.Id: %w", err)
 	}
-	if err := binWrite(w, ReplyFlag); err != nil {
+	if err := binWrite(w, CommandFlag); err != nil {
 		return fmt.Errorf("jdwp write pack ReplyFlag: %w", err)
 	}
 	if err := binWrite(w, c.CommandSet); err != nil {
