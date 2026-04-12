@@ -134,13 +134,3 @@ loop:
 	}
 	log.Println("jdwp Conn.sendCommandRoutine: end")
 }
-
-func (c *Conn) sendCommand(cm Command) (*commandResponse, error) {
-	id, r := c.idStore.Add()
-	select {
-	case <-c.done:
-		return nil, fmt.Errorf("jdwp Conn.sendCommand conn is done")
-	case c.commands <- sendCommandType{id, cm}:
-	}
-	return r, nil
-}

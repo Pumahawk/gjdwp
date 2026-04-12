@@ -1,11 +1,17 @@
 package jdwp
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"log"
 	"sync"
 )
+
+type parsable interface {
+	parse([]byte) error
+}
 
 type Conn struct {
 	rwc      io.ReadWriteCloser
@@ -85,15 +91,15 @@ type Command interface {
 }
 
 type BaseCommand struct {
-	commandSet uint32
-	command    uint32
+	commandSet uint8
+	command    uint8
 }
 
-func (b *BaseCommand) CommandSet() uint32 {
+func (b *BaseCommand) CommandSet() uint8 {
 	return b.commandSet
 }
 
-func (b *BaseCommand) Command() uint32 {
+func (b *BaseCommand) Command() uint8 {
 	return b.command
 }
 
@@ -127,4 +133,61 @@ func (i *idStore) GetAndDelete(id uint32) *commandResponse {
 	cr := i.store[id]
 	delete(i.store, id)
 	return cr
+}
+
+func (c *Conn) sendCommand(cm Command) (*commandResponse, error) {
+	id, r := c.idStore.Add()
+	select {
+	case <-c.done:
+		return nil, fmt.Errorf("jdwp Conn.sendCommand conn is done")
+	case c.commands <- sendCommandType{id, cm}:
+	}
+	return r, nil
+}
+
+func (c *Conn) sendCommandParseResponse(msg string, cm Command, p parsable) error {
+	r, err := c.sendCommand(cm)
+	if err != nil {
+		return fmt.Errorf("jdwp %s send command: %w", msg, err)
+	}
+	select {
+	case <-c.done:
+		return fmt.Errorf("jdwp %s conn is done", msg)
+	case <-r.done:
+	}
+	if r.err != None {
+		return fmt.Errorf("jdwp %s err: %s", msg, r.err)
+	}
+	if err := p.parse(r.data); err != nil {
+		return fmt.Errorf("jdwp %s parse: %w", msg, err)
+	}
+	return nil
+}
+
+func (v *AllThreadsResponse) parse(data []byte) error {
+	bf := bytes.NewBuffer(data)
+	var n uint32
+	if err := binary.Read(bf, binary.BigEndian, &n); err != nil {
+		return fmt.Errorf("error: jdwp AllThreadsResponse.parse: decode i")
+	}
+	ids := make([]uint64, 0, n)
+	var idbuf uint64
+	for i := range n {
+		if err := binary.Read(bf, binary.BigEndian, &idbuf); err != nil {
+			return fmt.Errorf("error: jdwp AllThreadsResponse.parse: decode threadId (%d/%d): %w", i, n, err)
+		}
+		ids = append(ids, idbuf)
+	}
+	v.Threads = ids
+	return nil
+}
+
+func (c *Conn) SendVirtualMachineVersion() (*VirtualMachineVersionResponse, error) {
+	vmv := NewVirtualMachineVersion()
+	vmr := &VirtualMachineVersionResponse{}
+	err := c.sendCommandParseResponse("Conn.SendVirtualMachineVersion", &vmv, vmr)
+	if err != nil {
+		return nil, fmt.Errorf("jdwp Conn.SendVirtualMachineVersion send command: %w", err)
+	}
+	return vmr, nil
 }
