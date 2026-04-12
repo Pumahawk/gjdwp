@@ -59,9 +59,9 @@ type AllThreadsResponse struct {
 }
 
 func (c *Conn) SendAllThreads() (*AllThreadsResponse, error) {
-	vmv := &AllThreads{}
+	vmv := NewAllThreads()
 	vmr := &AllThreadsResponse{}
-	err := c.sendCommandParseResponse("Conn.SendAllThreads", vmv, vmr)
+	err := c.sendCommandParseResponse("Conn.SendAllThreads", &vmv, vmr)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ type VMResume struct {
 	BaseCommand
 }
 
-func NewResume() VMResume {
+func NewVMResume() VMResume {
 	return VMResume{BaseCommand{1, 9}}
 }
 
@@ -99,9 +99,9 @@ func (v *VMResume) Data() []byte {
 }
 
 func (c *Conn) SendVMResume() (*NoResponseData, error) {
-	vmv := &VMResume{}
+	vmv := NewVMResume()
 	vmr := &NoResponseData{}
-	err := c.sendCommandParseResponse("Conn.SendVMResume", vmv, vmr)
+	err := c.sendCommandParseResponse("Conn.SendVMResume", &vmv, vmr)
 	if err != nil {
 		return nil, err
 	}
