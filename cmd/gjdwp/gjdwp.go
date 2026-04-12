@@ -36,8 +36,7 @@ func main() {
 	}
 
 	log.Printf("Write ResumeCommandData")
-	err = c.Write(jdwp.NewResumeCommand(102))
-	if err != nil {
+	if err := c.SandVirtualMachineResume(); err != nil {
 		log.Printf("Error on write pack: %s", err)
 	} else {
 		log.Printf("Success write pack")
