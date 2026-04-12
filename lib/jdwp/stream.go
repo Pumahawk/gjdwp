@@ -89,6 +89,7 @@ func (c *Conn) handshake() error {
 }
 
 func (c *Conn) sendCommandRoutine() {
+	defer c.closeRoutine()
 loop:
 	for cm := range c.commands {
 		select {
@@ -122,7 +123,7 @@ loop:
 			log.Printf("jdwp Conn.sendCommandRoutine: write command: %s", err)
 			break
 		}
-		if _, err := c.rwc.Write(data); err != nil {
+		if _, err := bf.Write(data); err != nil {
 			log.Printf("jdwp Conn.sendCommandRoutine: write data: %s", err)
 			break
 		}

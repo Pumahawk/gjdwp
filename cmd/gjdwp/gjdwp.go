@@ -19,9 +19,14 @@ func main() {
 		log.Fatalf("Unable to start jdwp connection: %s", err)
 	}
 	if r, err := conn.SendVirtualMachineVersion(); err != nil {
-		log.Fatalf("Unable to SendVirtualMachineVersion: %s", err)
+		log.Printf("Unable to SendVirtualMachineVersion: %s", err)
 	} else {
 		log.Printf("SendVirtualMachineVersion %v", r)
 	}
+	// if r, err := conn.SendAllThreads(); err != nil {
+	// 	log.Printf("Unable to SendAllThreads: %s", err)
+	// } else {
+	// 	log.Printf("SendAllThreadsResponse %v", r)
+	// }
 	<-done
 }

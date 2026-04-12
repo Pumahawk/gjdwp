@@ -56,12 +56,12 @@ func NewConn(rwc io.ReadWriteCloser) Conn {
 }
 
 func (c *Conn) Start() (<-chan any, error) {
-	go c.readStreamRoutine()
-	go c.closeRoutine()
-	go c.sendCommandRoutine()
 	if err := c.handshake(); err != nil {
 		return nil, fmt.Errorf("jdwc Conn.Start handshake: %s", err)
 	}
+	go c.readStreamRoutine()
+	go c.closeRoutine()
+	go c.sendCommandRoutine()
 	return c.done, nil
 }
 
@@ -79,8 +79,8 @@ type Event struct {
 }
 
 type Command interface {
-	CommandSet() uint32
-	Command() uint32
+	CommandSet() uint8
+	Command() uint8
 	Data() []byte
 }
 
