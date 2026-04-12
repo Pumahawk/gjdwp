@@ -57,7 +57,6 @@ func (c *Conn) closeRoutine() {
 	log.Printf("jdwp Conn.closeRoutine: start close operation")
 	c.rwc.Close()
 	close(c.done)
-	close(c.commands)
 	log.Printf("jdwp Conn.closeRoutine: end close operation")
 }
 
@@ -91,11 +90,12 @@ func (c *Conn) handshake() error {
 func (c *Conn) sendCommandRoutine() {
 	defer c.closeRoutine()
 loop:
-	for cm := range c.commands {
+	for {
+		var cm sendCommandType
 		select {
 		case <-c.done:
 			break loop
-		default:
+		case cm = <-c.commands:
 		}
 		id := cm.id
 		commandSet := cm.cm.CommandSet()
@@ -135,8 +135,12 @@ loop:
 	log.Println("jdwp Conn.sendCommandRoutine: end")
 }
 
-func (c *Conn) sendCommand(cm Command) *commandResponse {
+func (c *Conn) sendCommand(cm Command) (*commandResponse, error) {
 	id, r := c.idStore.Add()
-	c.commands <- sendCommandType{id, cm}
-	return r
+	select {
+	case <-c.done:
+		return nil, fmt.Errorf("jdwp Conn.sendCommand conn is done")
+	case c.commands <- sendCommandType{id, cm}:
+	}
+	return r, nil
 }

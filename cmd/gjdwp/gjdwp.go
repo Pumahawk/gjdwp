@@ -21,12 +21,12 @@ func main() {
 	if r, err := conn.SendVirtualMachineVersion(); err != nil {
 		log.Printf("Unable to SendVirtualMachineVersion: %s", err)
 	} else {
-		log.Printf("SendVirtualMachineVersion %v", r)
+		log.Printf("SendVirtualMachineVersion: [%d:%d] %s", r.JdwpMajor, r.JdwpMinor, r.Description)
 	}
-	// if r, err := conn.SendAllThreads(); err != nil {
-	// 	log.Printf("Unable to SendAllThreads: %s", err)
-	// } else {
-	// 	log.Printf("SendAllThreadsResponse %v", r)
-	// }
+	if r, err := conn.SendAllThreads(); err != nil {
+		log.Printf("Unable to SendAllThreads: %s", err)
+	} else {
+		log.Printf("SendAllThreadsResponse %v", r)
+	}
 	<-done
 }

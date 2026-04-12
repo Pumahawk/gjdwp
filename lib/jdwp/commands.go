@@ -8,8 +8,15 @@ import (
 
 func (c *Conn) SendVirtualMachineVersion() (*VirtualMachineVersionResponse, error) {
 	vmv := &VirtualMachineVersion{}
-	r := c.sendCommand(vmv)
-	<-r.done
+	r, err := c.sendCommand(vmv)
+	if err != nil {
+		return nil, fmt.Errorf("jdwp Conn.SendVirtualMachineVersion send command: %w", err)
+	}
+	select {
+	case <-c.done:
+		return nil, fmt.Errorf("jdwp Conn.SendVirtualMachineVersion conn is done")
+	case <-r.done:
+	}
 	if r.err != None {
 		return nil, fmt.Errorf("jdwp Conn.SendVirtualMachineVersion err: %s", r.err)
 	}
@@ -70,8 +77,15 @@ type AllThreadsResponse struct {
 
 func (c *Conn) SendAllThreads() (*AllThreadsResponse, error) {
 	vmv := &AllThreads{}
-	r := c.sendCommand(vmv)
-	<-r.done
+	r, err := c.sendCommand(vmv)
+	if err != nil {
+		return nil, fmt.Errorf("jdwp Conn.SendAllThreads send command: %w", err)
+	}
+	select {
+	case <-c.done:
+		return nil, fmt.Errorf("jdwp Conn.SendAllThreads conn is done")
+	case <-r.done:
+	}
 	if r.err != None {
 		return nil, fmt.Errorf("jdwp Conn.SendAllThreads err: %s", r.err)
 	}
