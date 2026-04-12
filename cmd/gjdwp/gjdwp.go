@@ -28,5 +28,11 @@ func main() {
 	} else {
 		log.Printf("SendAllThreadsResponse %v", r)
 	}
+	// if r, err := conn.SendVMResume(); err != nil {
+	// 	log.Printf("Unable to SendVMResume: %s", err)
+	// } else {
+	// 	log.Printf("SendVMResumeResponse %v", r)
+	// }
+
 	<-done
 }

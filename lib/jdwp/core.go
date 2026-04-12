@@ -1,8 +1,6 @@
 package jdwp
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
 	"io"
 	"log"
@@ -164,30 +162,10 @@ func (c *Conn) sendCommandParseResponse(msg string, cm Command, p parsable) erro
 	return nil
 }
 
-func (v *AllThreadsResponse) parse(data []byte) error {
-	bf := bytes.NewBuffer(data)
-	var n uint32
-	if err := binary.Read(bf, binary.BigEndian, &n); err != nil {
-		return fmt.Errorf("error: jdwp AllThreadsResponse.parse: decode i")
-	}
-	ids := make([]uint64, 0, n)
-	var idbuf uint64
-	for i := range n {
-		if err := binary.Read(bf, binary.BigEndian, &idbuf); err != nil {
-			return fmt.Errorf("error: jdwp AllThreadsResponse.parse: decode threadId (%d/%d): %w", i, n, err)
-		}
-		ids = append(ids, idbuf)
-	}
-	v.Threads = ids
-	return nil
+type NoResponseData struct {
+	BaseCommandResponse
 }
 
-func (c *Conn) SendVirtualMachineVersion() (*VirtualMachineVersionResponse, error) {
-	vmv := NewVirtualMachineVersion()
-	vmr := &VirtualMachineVersionResponse{}
-	err := c.sendCommandParseResponse("Conn.SendVirtualMachineVersion", &vmv, vmr)
-	if err != nil {
-		return nil, fmt.Errorf("jdwp Conn.SendVirtualMachineVersion send command: %w", err)
-	}
-	return vmr, nil
+func (v *NoResponseData) parse(data []byte) error {
+	return nil
 }
