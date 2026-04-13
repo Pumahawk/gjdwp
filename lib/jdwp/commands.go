@@ -1,8 +1,6 @@
 package jdwp
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
 )
 
@@ -54,8 +52,8 @@ func (v *AllThreads) Data() []byte {
 }
 
 type AllThreadsResponse struct {
-	BaseCommandResponse
-	Threads []uint64
+	BaseCommandResponse `jdwp:"ignore"`
+	Threads             []uint64
 }
 
 func (c *Conn) SendAllThreads() (*AllThreadsResponse, error) {
@@ -69,21 +67,7 @@ func (c *Conn) SendAllThreads() (*AllThreadsResponse, error) {
 }
 
 func (v *AllThreadsResponse) parse(data []byte) error {
-	bf := bytes.NewBuffer(data)
-	var n uint32
-	if err := binary.Read(bf, binary.BigEndian, &n); err != nil {
-		return fmt.Errorf("jdwp AllThreadsResponse.parse: decode i")
-	}
-	ids := make([]uint64, 0, n)
-	var idbuf uint64
-	for i := range n {
-		if err := binary.Read(bf, binary.BigEndian, &idbuf); err != nil {
-			return fmt.Errorf("jdwp AllThreadsResponse.parse: decode threadId (%d/%d): %w", i, n, err)
-		}
-		ids = append(ids, idbuf)
-	}
-	v.Threads = ids
-	return nil
+	return Unmashal(data, v)
 }
 
 type VMResume struct {

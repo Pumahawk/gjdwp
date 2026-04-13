@@ -28,20 +28,50 @@ func TestUnmarshalNumber(t *testing.T) {
 }
 
 func TestUnmarshalStruct(t *testing.T) {
-	bf := prepareBuffer(int32(11), int32(22))
-	type str struct {
-		A int32
-		B int32
+	// Basic field
+	{
+		bf := prepareBuffer(int32(11), int32(22))
+		type str struct {
+			A int32
+			B int32
+		}
+		var v str
+		if err := Unmashal(bf, &v); err != nil {
+			t.Error(err)
+		}
+		if v.A != 11 {
+			t.Errorf("v.A expected 11, got %d", v.A)
+		}
+		if v.B != 22 {
+			t.Errorf("v.B expected 22, got %d", v.B)
+		}
 	}
-	var v str
-	if err := Unmashal(bf, &v); err != nil {
-		t.Error(err)
-	}
-	if v.A != 11 {
-		t.Errorf("v.A expected 11, got %d", v.A)
-	}
-	if v.B != 22 {
-		t.Errorf("v.B expected 22, got %d", v.B)
+
+	// Ignore field
+	{
+		bf := prepareBuffer(int32(11), int32(22))
+		type str struct {
+			A int32 `jdwp:"ignore"`
+			B int32
+			C int32 `jdwp:"mock1,ignore,mock2"`
+			D int32
+		}
+		var v str
+		if err := Unmashal(bf, &v); err != nil {
+			t.Error(err)
+		}
+		if v.A != 0 {
+			t.Errorf("v.A expected 0, got %d", v.A)
+		}
+		if v.B != 11 {
+			t.Errorf("v.B expected 11, got %d", v.B)
+		}
+		if v.C != 0 {
+			t.Errorf("v.C expected 0, got %d", v.B)
+		}
+		if v.D != 22 {
+			t.Errorf("v.D expected 22, got %d", v.B)
+		}
 	}
 }
 

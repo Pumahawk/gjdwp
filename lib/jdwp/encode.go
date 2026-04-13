@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"slices"
+	"strings"
 )
 
 func Unmashal(bf []byte, v any) error {
@@ -29,7 +31,11 @@ func unmashal(r io.Reader, v reflect.Value) error {
 
 	// Struct
 	case reflect.Struct:
+		t := v.Type()
 		for i := range v.NumField() {
+			if SkipField(t.Field(i)) {
+				continue
+			}
 			if err := unmashal(r, v.Field(i)); err != nil {
 				return fmt.Errorf("jdwp unmashal field[%d]: %w", i, err)
 			}
@@ -69,4 +75,9 @@ func unmashal(r io.Reader, v reflect.Value) error {
 	default:
 		return fmt.Errorf("jdwp unmashal: unsupported type %s", v.Kind())
 	}
+}
+
+func SkipField(s reflect.StructField) bool {
+	tags := strings.Split(s.Tag.Get("jdwp"), ",")
+	return slices.Contains(tags, "ignore")
 }
