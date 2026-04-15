@@ -12,15 +12,19 @@ import (
 
 func Unmashal(bf []byte, v any) error {
 	r := bytes.NewReader(bf)
-	return unmashal(r, reflect.ValueOf(v))
+	return decode(r, reflect.ValueOf(v))
 }
 
-func unmashal(r io.Reader, v reflect.Value) error {
+func Decode(r io.Reader, v any) error {
+	return decode(r, reflect.ValueOf(v))
+}
+
+func decode(r io.Reader, v reflect.Value) error {
 	switch v.Kind() {
 
 	// Pointer
 	case reflect.Pointer:
-		return unmashal(r, v.Elem())
+		return decode(r, v.Elem())
 
 	// Numbers
 	case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
@@ -36,7 +40,7 @@ func unmashal(r io.Reader, v reflect.Value) error {
 			if SkipField(t.Field(i)) {
 				continue
 			}
-			if err := unmashal(r, v.Field(i)); err != nil {
+			if err := decode(r, v.Field(i)); err != nil {
 				return fmt.Errorf("jdwp unmashal field[%d]: %w", i, err)
 			}
 		}
@@ -51,7 +55,7 @@ func unmashal(r io.Reader, v reflect.Value) error {
 		}
 		for i := range length {
 			el := reflect.New(t.Elem()).Elem()
-			if err := unmashal(r, el); err != nil {
+			if err := decode(r, el); err != nil {
 				return fmt.Errorf("jdwp slice read (%d/%d): %w", i, length, err)
 			}
 			v.Set(reflect.Append(v, el))
