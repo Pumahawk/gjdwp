@@ -85,3 +85,13 @@ func SkipField(s reflect.StructField) bool {
 	tags := strings.Split(s.Tag.Get("jdwp"), ",")
 	return slices.Contains(tags, "ignore")
 }
+
+func Encode(w io.Writer, command any) error {
+	// TODO
+	panic("not implemented")
+}
+
+func Marshal(any) ([]byte, error) {
+	// TODO
+	panic("not implemented")
+}

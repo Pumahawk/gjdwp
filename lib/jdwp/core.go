@@ -31,8 +31,10 @@ type repliesChannel chan any
 type Done chan any
 
 type sendCommandType struct {
-	id uint32
-	cm Command
+	id         uint32
+	commandSet uint8
+	command    uint8
+	cm         Command
 }
 
 func (c *Conn) log(format string, v ...any) {
@@ -87,24 +89,7 @@ type commandResponse struct {
 type Event struct {
 }
 
-type Command interface {
-	CommandSet() uint8
-	Command() uint8
-	Data() []byte
-}
-
-type BaseCommand struct {
-	commandSet uint8
-	command    uint8
-}
-
-func (b *BaseCommand) CommandSet() uint8 {
-	return b.commandSet
-}
-
-func (b *BaseCommand) Command() uint8 {
-	return b.command
-}
+type Command any
 
 type packBuffer struct {
 	Id   uint32
@@ -138,18 +123,18 @@ func (i *idStore) GetAndDelete(id uint32) *commandResponse {
 	return cr
 }
 
-func (c *Conn) sendCommand(cm Command) (*commandResponse, error) {
+func (c *Conn) sendCommand(commandSet, command uint8, cm Command) (*commandResponse, error) {
 	id, r := c.idStore.Add()
 	select {
 	case <-c.done:
 		return nil, fmt.Errorf("jdwp Conn.sendCommand conn is done")
-	case c.commands <- sendCommandType{id, cm}:
+	case c.commands <- sendCommandType{id, commandSet, command, cm}:
 	}
 	return r, nil
 }
 
-func (c *Conn) sendCommandParseResponse(msg string, cm Command, rc any) error {
-	r, err := c.sendCommand(cm)
+func (c *Conn) sendCommandParseResponse(msg string, commandSet, command uint8, cm Command, rc any) error {
+	r, err := c.sendCommand(commandSet, command, cm)
 	if err != nil {
 		return fmt.Errorf("jdwp %s send command: %w", msg, err)
 	}

@@ -5,11 +5,6 @@ import (
 )
 
 type VirtualMachineVersion struct {
-	BaseCommand
-}
-
-func NewVirtualMachineVersion() VirtualMachineVersion {
-	return VirtualMachineVersion{BaseCommand{1, 1}}
 }
 
 func (v *VirtualMachineVersion) Data() []byte {
@@ -25,9 +20,9 @@ type VirtualMachineVersionResponse struct {
 }
 
 func (c *Conn) SendVirtualMachineVersion() (*VirtualMachineVersionResponse, error) {
-	vmv := NewVirtualMachineVersion()
+	vmv := VirtualMachineVersion{}
 	vmr := &VirtualMachineVersionResponse{}
-	err := c.sendCommandParseResponse("Conn.SendVirtualMachineVersion", &vmv, vmr)
+	err := c.sendCommandParseResponse("Conn.SendVirtualMachineVersion", 1, 1, &vmv, vmr)
 	if err != nil {
 		return nil, fmt.Errorf("jdwp Conn.SendVirtualMachineVersion send command: %w", err)
 	}
@@ -39,11 +34,6 @@ func (v *VirtualMachineVersionResponse) parse(data []byte) error {
 }
 
 type AllThreads struct {
-	BaseCommand
-}
-
-func NewAllThreads() AllThreads {
-	return AllThreads{BaseCommand{1, 4}}
 }
 
 func (v *AllThreads) Data() []byte {
@@ -55,9 +45,9 @@ type AllThreadsResponse struct {
 }
 
 func (c *Conn) SendAllThreads() (*AllThreadsResponse, error) {
-	vmv := NewAllThreads()
+	vmv := AllThreads{}
 	vmr := &AllThreadsResponse{}
-	err := c.sendCommandParseResponse("Conn.SendAllThreads", &vmv, vmr)
+	err := c.sendCommandParseResponse("Conn.SendAllThreads", 1, 4, &vmv, vmr)
 	if err != nil {
 		return nil, err
 	}
@@ -69,11 +59,6 @@ func (v *AllThreadsResponse) parse(data []byte) error {
 }
 
 type VMResume struct {
-	BaseCommand
-}
-
-func NewVMResume() VMResume {
-	return VMResume{BaseCommand{1, 9}}
 }
 
 func (v *VMResume) Data() []byte {
@@ -81,11 +66,32 @@ func (v *VMResume) Data() []byte {
 }
 
 func (c *Conn) SendVMResume() (*NoResponseData, error) {
-	vmv := NewVMResume()
+	vmv := VMResume{}
 	vmr := &NoResponseData{}
-	err := c.sendCommandParseResponse("Conn.SendVMResume", &vmv, vmr)
+	err := c.sendCommandParseResponse("Conn.SendVMResume", 1, 9, &vmv, vmr)
 	if err != nil {
 		return nil, err
 	}
 	return vmr, nil
+}
+
+type VMTopLevelThreadGroups struct {
+}
+
+func (*VMTopLevelThreadGroups) Data() []byte {
+	return nil
+}
+
+func (c *Conn) SendVMTopLevelThreadGroups() (*VMTopLevelThreadGroupsResponse, error) {
+	// 1, 5
+	cb := VMTopLevelThreadGroups{}
+	cr := &VMTopLevelThreadGroupsResponse{}
+	if err := c.sendCommandParseResponse("Conn.SendVMTopLevelThreadGroups", 1, 5, &cb, cr); err != nil {
+		return nil, fmt.Errorf("jdwp Conn.SendVMTopLevelThreadGroups send command: %w", err)
+	}
+	return cr, nil
+}
+
+type VMTopLevelThreadGroupsResponse struct {
+	GroupIds []uint64
 }

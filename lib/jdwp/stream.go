@@ -96,9 +96,12 @@ loop:
 		case cm = <-c.commands:
 		}
 		id := cm.id
-		commandSet := cm.cm.CommandSet()
-		command := cm.cm.Command()
-		data := cm.cm.Data()
+		commandSet, command := cm.commandSet, cm.command
+		data, err := Marshal(cm.cm)
+		if err != nil {
+			c.log("jdwp Conn.sendCommandRoutine marshal: %s", err)
+			break
+		}
 		lenght := uint32(len(data)) + 11
 		bf := bytes.NewBuffer(make([]byte, 0, lenght))
 		if err := binary.Write(bf, binary.BigEndian, lenght); err != nil {
