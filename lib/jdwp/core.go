@@ -3,22 +3,24 @@ package jdwp
 import (
 	"fmt"
 	"io"
-	"log"
 	"sync"
 )
+
+type LoggerFunc = func(format string, v ...any)
 
 type parsable interface {
 	parse([]byte) error
 }
 
 type Conn struct {
-	rwc      io.ReadWriteCloser
-	idStore  idStore
-	events   eventsChannel
-	commands commandsChannel
-	replies  repliesChannel
-	stop     stopChannel
-	done     doneChannel
+	rwc        io.ReadWriteCloser
+	idStore    idStore
+	events     eventsChannel
+	commands   commandsChannel
+	replies    repliesChannel
+	stop       stopChannel
+	done       doneChannel
+	LoggerFunc LoggerFunc
 }
 
 type eventsChannel chan Event
@@ -33,6 +35,12 @@ type sendCommandType struct {
 	cm Command
 }
 
+func (c *Conn) log(format string, v ...any) {
+	if c.LoggerFunc != nil {
+		c.LoggerFunc(format, v...)
+	}
+}
+
 func (c *Conn) Close() error {
 	c.closeRoutine()
 	return nil
@@ -41,9 +49,9 @@ func (c *Conn) Close() error {
 func (c *Conn) stopRoutines() {
 	select {
 	case c.stop <- 1:
-		log.Printf("jdwp Conne.stopRoutines: send")
+		c.log("jdwp Conne.stopRoutines: send")
 	default:
-		log.Printf("jdwp Conne.stopRoutines: ignored")
+		c.log("jdwp Conne.stopRoutines: ignored")
 	}
 }
 
@@ -56,6 +64,7 @@ func NewConn(rwc io.ReadWriteCloser) Conn {
 		make(repliesChannel),
 		make(stopChannel, 10),
 		make(doneChannel),
+		nil,
 	}
 }
 

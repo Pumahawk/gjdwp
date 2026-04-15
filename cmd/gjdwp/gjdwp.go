@@ -14,6 +14,7 @@ func main() {
 		log.Fatalf("Unable to connect %s", add)
 	}
 	conn := jdwp.NewConn(tcpConn)
+	conn.LoggerFunc = log.Printf
 	done, err := conn.Start()
 	if err != nil {
 		log.Fatalf("Unable to start jdwp connection: %s", err)

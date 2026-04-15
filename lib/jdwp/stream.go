@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"log"
 	"slices"
 )
 
@@ -15,7 +14,7 @@ func (c *Conn) readStreamRoutine() {
 	var bufl [4]byte
 	for {
 		if n, err := r.Read(bufl[:]); err != nil {
-			log.Printf("jwdp Conn.readStreamRoutine: unable to read lenght n=[%d]: %s", n, err)
+			c.log("jwdp Conn.readStreamRoutine: unable to read lenght n=[%d]: %s", n, err)
 			break
 		}
 		var length uint32
@@ -24,51 +23,50 @@ func (c *Conn) readStreamRoutine() {
 		}
 		var id uint32
 		if err := binary.Read(c.rwc, binary.BigEndian, &id); err != nil {
-			log.Printf("jdwp Conn.readStreamRoutine: unable to read id %s", err)
+			c.log("jdwp Conn.readStreamRoutine: unable to read id %s", err)
 			break
 		}
 		var flag uint8
 		if err := binary.Read(c.rwc, binary.BigEndian, &flag); err != nil {
-			log.Printf("jdwp Conn.readStreamRoutine: unable to read flag %s", err)
+			c.log("jdwp Conn.readStreamRoutine: unable to read flag %s", err)
 			break
 		}
 		var errcode uint16
 		if err := binary.Read(c.rwc, binary.BigEndian, &errcode); err != nil {
-			log.Printf("jdwp Conn.readStreamRoutine: unable to read errcode %s", err)
+			c.log("jdwp Conn.readStreamRoutine: unable to read errcode %s", err)
 			break
 		}
 		dataLength := length - 11
 		data := make([]byte, dataLength)
 		if n, err := r.Read(data); n != int(dataLength) || err != nil {
-			log.Printf("jdwp Conn.readStreamRoutine: unable to read data n[%d/%d]: %s", n, dataLength, err)
+			c.log("jdwp Conn.readStreamRoutine: unable to read data n[%d/%d]: %s", n, dataLength, err)
 			break
 		}
 		if flag == uint8(0x80) {
 			go c.processPack(packBuffer{id, errcode, data})
 		} else {
-			log.Printf("jwdp Conn.readStreamRoutine: TODO... commands from debugger not supported yet")
+			c.log("jwdp Conn.readStreamRoutine: TODO... commands from debugger not supported yet")
 		}
 	}
-	log.Printf("jdwp Conn.readStreamRoutine: end")
+	c.log("jdwp Conn.readStreamRoutine: end")
 }
 
 func (c *Conn) closeRoutine() {
 	<-c.stop
-	log.Printf("jdwp Conn.closeRoutine: start close operation")
+	c.log("jdwp Conn.closeRoutine: start close operation")
 	c.rwc.Close()
 	close(c.done)
-	log.Printf("jdwp Conn.closeRoutine: end close operation")
+	c.log("jdwp Conn.closeRoutine: end close operation")
 }
 
 func (c *Conn) processPack(pack packBuffer) {
-	log.Printf("jdwp Conn.processPack: print pack %T %[1]v", pack)
 	if pack.Id != 0 {
 		r := c.idStore.GetAndDelete(pack.Id)
 		r.err = Error(pack.Err)
 		r.data = pack.Data
 		close(r.done)
 	} else {
-		log.Printf("jwdp Conn.processPack: not supported id 0")
+		c.log("jwdp Conn.processPack: not supported id 0")
 	}
 }
 
@@ -104,33 +102,33 @@ loop:
 		lenght := uint32(len(data)) + 11
 		bf := bytes.NewBuffer(make([]byte, 0, lenght))
 		if err := binary.Write(bf, binary.BigEndian, lenght); err != nil {
-			log.Printf("jdwp Conn.sendCommandRoutine: write lenght: %s", err)
+			c.log("jdwp Conn.sendCommandRoutine: write lenght: %s", err)
 			break
 		}
 		if err := binary.Write(bf, binary.BigEndian, id); err != nil {
-			log.Printf("jdwp Conn.sendCommandRoutine: write id: %s", err)
+			c.log("jdwp Conn.sendCommandRoutine: write id: %s", err)
 			break
 		}
 		if err := binary.Write(bf, binary.BigEndian, int8(0)); err != nil {
-			log.Printf("jdwp Conn.sendCommandRoutine: write flag: %s", err)
+			c.log("jdwp Conn.sendCommandRoutine: write flag: %s", err)
 			break
 		}
 		if err := binary.Write(bf, binary.BigEndian, commandSet); err != nil {
-			log.Printf("jdwp Conn.sendCommandRoutine: write commandSet: %s", err)
+			c.log("jdwp Conn.sendCommandRoutine: write commandSet: %s", err)
 			break
 		}
 		if err := binary.Write(bf, binary.BigEndian, command); err != nil {
-			log.Printf("jdwp Conn.sendCommandRoutine: write command: %s", err)
+			c.log("jdwp Conn.sendCommandRoutine: write command: %s", err)
 			break
 		}
 		if _, err := bf.Write(data); err != nil {
-			log.Printf("jdwp Conn.sendCommandRoutine: write data: %s", err)
+			c.log("jdwp Conn.sendCommandRoutine: write data: %s", err)
 			break
 		}
 		if n, err := c.rwc.Write(bf.Bytes()); n != int(lenght) || err != nil {
-			log.Printf("jdwp Conn.sendCommandRoutine: write all buffer (%d/%d): %s", n, lenght, err)
+			c.log("jdwp Conn.sendCommandRoutine: write all buffer (%d/%d): %s", n, lenght, err)
 			break
 		}
 	}
-	log.Println("jdwp Conn.sendCommandRoutine: end")
+	c.log("jdwp Conn.sendCommandRoutine: end")
 }
