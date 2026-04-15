@@ -75,10 +75,6 @@ type commandResponse struct {
 	data []byte
 }
 
-type BaseCommandResponse struct {
-	Err Error
-}
-
 type Event struct {
 }
 
@@ -143,7 +139,7 @@ func (c *Conn) sendCommand(cm Command) (*commandResponse, error) {
 	return r, nil
 }
 
-func (c *Conn) sendCommandParseResponse(msg string, cm Command, p parsable) error {
+func (c *Conn) sendCommandParseResponse(msg string, cm Command, rc any) error {
 	r, err := c.sendCommand(cm)
 	if err != nil {
 		return fmt.Errorf("jdwp %s send command: %w", msg, err)
@@ -156,14 +152,13 @@ func (c *Conn) sendCommandParseResponse(msg string, cm Command, p parsable) erro
 	if r.err != None {
 		return fmt.Errorf("jdwp %s err: %s", msg, r.err)
 	}
-	if err := p.parse(r.data); err != nil {
+	if err := Unmashal(r.data, rc); err != nil {
 		return fmt.Errorf("jdwp %s parse: %w", msg, err)
 	}
 	return nil
 }
 
 type NoResponseData struct {
-	BaseCommandResponse
 }
 
 func (v *NoResponseData) parse(data []byte) error {

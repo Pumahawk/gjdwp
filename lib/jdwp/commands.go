@@ -17,7 +17,6 @@ func (v *VirtualMachineVersion) Data() []byte {
 }
 
 type VirtualMachineVersionResponse struct {
-	BaseCommandResponse
 	Description string
 	JdwpMajor   int32
 	JdwpMinor   int32
@@ -52,8 +51,7 @@ func (v *AllThreads) Data() []byte {
 }
 
 type AllThreadsResponse struct {
-	BaseCommandResponse `jdwp:"ignore"`
-	Threads             []uint64
+	Threads []uint64
 }
 
 func (c *Conn) SendAllThreads() (*AllThreadsResponse, error) {
